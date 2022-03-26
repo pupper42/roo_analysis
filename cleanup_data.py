@@ -1,6 +1,7 @@
 #Processes the raw angles data to get only date, RA and DEC. Also attempts to remove false positives.
 #Output csv structure:
-# Col 0: Date, Col 1: RA, Col 2: DEC
+#Col 0: Date, Col 1: RA, Col 2: DEC
+#Unique rows: https://gist.github.com/cgois/635ed2f67067df19a7b920e1b32d3fe5
 
 import numpy as np
 import os
@@ -10,6 +11,14 @@ qzs3_raw_data = "raw_data/QZS3/"
 
 qzs1_data = "data/QZS1/"
 qzs3_data = "data/QZS3/"
+
+def unique_rows(A, atol=10e-3):
+    remove = np.zeros(A.shape[0], dtype=bool)
+
+    for i in range(A.shape[0]): 	# Not very optimized, but simple.
+        equals = np.all(np.isclose(A[i, :], A[(i + 1):, :], atol=atol), axis=1)
+        remove[(i + 1):] = np.logical_or(remove[(i + 1):], equals)
+    return A[np.logical_not(remove)]
 
 #Process QZS1 data
 
@@ -21,24 +30,10 @@ for directory in os.listdir(qzs1_raw_data):
     data = np.delete(raw_data, [1, 2], 1)
     data = np.delete(data, [0], 0)
 
-    RA = np.array(np.unique(data[1:, 1].astype(np.float64).round(2), return_index=True))
-    DEC = np.array(np.unique(data[1:, 2].astype(np.float64).round(3), return_index=True))
+    processed_data = unique_rows(data)
 
-    #for i in len(RA):
-    #   if RA[1, i] == DEC
-
-    satellite_RA = data[np.array(RA)[1, :].astype(np.int32), 1]
-    satellite_DEC = data[np.array(DEC)[1, :].astype(np.int32), 2]
-
-    np.savetxt("RAtest.csv", RA, delimiter=",", fmt="%s")
-    np.savetxt("DECtest.csv", DEC, delimiter=",", fmt="%s")
-
-    print(data)
-
-    #processed_data = np.column_stack((data[:, 0], satellite_RA, satellite_DEC))
-
-    #save_file = qzs1_data + directory + "_qzs1_radec.csv"
-    #np.savetxt(save_file, processed_data, delimiter=",", fmt="%s")
+    save_file = qzs1_data + directory + "_qzs1_radec.csv"
+    np.savetxt(save_file, processed_data, delimiter=",", fmt="%s")
 
     
 #Process QZS3 data
