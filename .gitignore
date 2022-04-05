@@ -114,4 +114,4 @@ dmypy.json
 .pyre/
 
 *.png
-/raw_data
+/unprocessed_obs

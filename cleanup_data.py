@@ -6,11 +6,11 @@
 import numpy as np
 import os
 
-qzs1_raw_data = "raw_data/QZS1/"
-qzs3_raw_data = "raw_data/QZS3/"
+qzs1_raw_data = "unprocessed_obs/QZS1/"
+qzs3_raw_data = "unprocessed_obs/QZS3/"
 
-qzs1_data = "data/QZS1/"
-qzs3_data = "data/QZS3/"
+qzs1_data = "processed_obs/QZS1/"
+qzs3_data = "processed_obs/QZS3/"
 
 def unique_rows(A, atol=10e-3):
     remove = np.zeros(A.shape[0], dtype=bool)
