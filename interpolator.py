@@ -30,18 +30,18 @@ sp3 = gr.load_sp3(sp3_path, sp3_output)
 print("Loaded SP3 file")
 
 # Read the ITRS (ECEF) coordinates of the satellites + time
-x_itrs = sp3.sel(sv=satellite).position.sel(ECEF='x').to_numpy()
-y_itrs = sp3.sel(sv=satellite).position.sel(ECEF='y').to_numpy()
-z_itrs = sp3.sel(sv=satellite).position.sel(ECEF='z').to_numpy()
-t = sp3.sel(sv=satellite).position.time.to_numpy()
+satellite_itrs_x = sp3.sel(sv=satellite).position.sel(ECEF='x').to_numpy()
+satellite_itrs_y = sp3.sel(sv=satellite).position.sel(ECEF='y').to_numpy()
+satellite_itrs_z = sp3.sel(sv=satellite).position.sel(ECEF='z').to_numpy()
+gps_time = sp3.sel(sv=satellite).position.time.to_numpy()
 print("Coordinates read successfully")
 
 # Convert the ITRS coordinates to GCRS and TETE coordinates and save it to new arrays
 utc_time_list = []
 
-x_gcrs = []
-y_gcrs = []
-z_gcrs = []
+satellite_gcrs_x = []
+satellite_gcrs_y = []
+satellite_gcrs_z = []
 
 geo_distance = []
 geo_ra = []
@@ -51,17 +51,17 @@ topo_distance = []
 topo_ra = []
 topo_dec = []
 
-array_size = x_itrs.size
+array_size = satellite_itrs_x.size
 for i in range(array_size):
     # Correct GPS time offset (GPS is ahead by 18s, so subtract 18s from GPS time)
-    utc_time = t[i] - np.timedelta64(18, 's')
+    utc_time = gps_time[i] - np.timedelta64(18, 's')
     utc_time_list.append(utc_time)
     # Convert ITRS coords of satellites to GCRS
-    satellite_itrs = SkyCoord(x=x_itrs[i]*u.km, y=y_itrs[i]*u.km, z=z_itrs[i]*u.km, frame='itrs', obstime=utc_time)
+    satellite_itrs = SkyCoord(x=satellite_itrs_x[i]*u.km, y=satellite_itrs_y[i]*u.km, z=satellite_itrs_z[i]*u.km, frame='itrs', obstime=utc_time)
     satellite_gcrs = satellite_itrs.transform_to(coord.GCRS(obstime=utc_time))
 
     # Convert ITRS coords of observer location to GCRS
-    obsloc_itrs = coord.ITRS((obs_location.x, obs_location.y, obs_location.z), obstime=t[i], representation_type = 'cartesian')
+    obsloc_itrs = coord.ITRS((obs_location.x, obs_location.y, obs_location.z), obstime=utc_time, representation_type = 'cartesian')
     obsloc_gcrs = obsloc_itrs.transform_to(coord.GCRS(obstime=utc_time))
 
     # Calculate the vector from the observer to the satellite (obs vector)
@@ -73,15 +73,16 @@ for i in range(array_size):
     # Calculate magnitude of the obs vector and RA/DEC
     topo_dist = np.linalg.norm(obs_vec_r)
     topo_rav = atan2(obs_vec_r[1], obs_vec_r[0])*180/np.pi
+    print(topo_rav)
     topo_decv = asin(obs_vec_r[2]/topo_dist)*180/np.pi
     if topo_rav < 0:
         topo_rav += 360
     
     # Save the satellite's GCRS coordinates in cartesian for plotting
     satellite_gcrs.representation_type = 'cartesian'
-    x_gcrs.append(satellite_gcrs.x.value)
-    y_gcrs.append(satellite_gcrs.y.value)
-    z_gcrs.append(satellite_gcrs.z.value)
+    satellite_gcrs_x.append(satellite_gcrs.x.value)
+    satellite_gcrs_y.append(satellite_gcrs.y.value)
+    satellite_gcrs_z.append(satellite_gcrs.z.value)
 
     # Save the satellite's GCRS coordinates in RA/DEC for plotting
     satellite_gcrs.representation_type = 'spherical'
@@ -96,10 +97,10 @@ for i in range(array_size):
 
     percentage_complete = ceil((i/array_size)*100)
     
-    print("Transforming... " + str(percentage_complete) + "% complete")
+    #print("Transforming... " + str(percentage_complete) + "% complete")
 
 print("Transformation complete!")
-
+print(topo_ra)
 # Save geocentric coordinates
 str_time = np.datetime_as_string(utc_time_list)
 gcrs_coords = np.stack((str_time, geo_ra, geo_dec, geo_distance), axis=1)
@@ -115,6 +116,6 @@ print("Topocentric coordinates CSV saved in " + output_file)
 
 # Plot the orbit
 ax = plt.figure().add_subplot(projection="3d")
-ax.plot3D(x_gcrs, y_gcrs, z_gcrs, "gray")
-ax.plot3D(x_itrs, y_itrs, z_itrs, "red")
+ax.plot3D(satellite_gcrs_x, satellite_gcrs_y, satellite_gcrs_z, "gray")
+ax.plot3D(satellite_itrs_x, satellite_itrs_y, satellite_itrs_z, "red")
 plt.show()
