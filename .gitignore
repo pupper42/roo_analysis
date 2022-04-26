@@ -114,7 +114,7 @@ dmypy.json
 .pyre/
 
 *.png
-/unprocessed_obs
+*.csv
 metis-master 
 metis
 numerical_methods.py
