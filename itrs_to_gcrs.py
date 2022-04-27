@@ -16,12 +16,12 @@ from numerical_methods import interp_lagrange
 
 # CONFIG ############## ##############################################
 # Choose the sp3 file and satellite and output directory
-sp3_file = "qzr21993.sp3"
-satellite='J01'
-output_dir = "truth_orbit_data/"
+sp3_file = "qzf21831.sp3"
+satellite='J07'
+output_dir = "accuracy_comparison_data/"
 
 # Telescope data location 
-telescope_data_loc = "cleaned_angles/QZS1/220302_qzs1_cleaned.csv"
+telescope_data_loc = "telescope_data/QZS1/211108_qzs1_cleaned.csv"
 
 # Observer location 
 roo = [-37.680589141*u.deg, 145.061634327*u.deg, 155.083*u.m]
