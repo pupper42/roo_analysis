@@ -12,6 +12,7 @@ from datetime import datetime
 from astropy import units as u
 from astropy.coordinates import (SkyCoord, EarthLocation)
 from astropy import coordinates as coord
+from alive_progress import alive_bar
 
 
 # CONFIG
@@ -61,7 +62,7 @@ def choose_ephemeris(ephemeris_type, ephemeris_folder, time):
     elif ephemeris_type == "final":
         file_name = "qzf" + gps_weekday + ".sp3"
         download_link = ephemeris_rapid_url + year + file_name
-        
+
         print("Downloading final ephemeris " + file_name)
         ephemeris_file = requests.get(download_link, allow_redirects=True)
         open(ephemeris_folder + file_name, 'wb').write(ephemeris_file.content)
@@ -121,12 +122,13 @@ def interpolate_transform(satellite, telescope_datetime, ephemeris_folder):
 
     x_interp, y_interp, z_interp = interpolate(satellite_itrs_x, satellite_itrs_y, satellite_itrs_z, satellite_time_utc, telescope_datetime)
     no_coordinates = len(x_interp)
-    for i in range(no_coordinates):
-        ra, dec = transform(x_interp[i], y_interp[i], z_interp[i], telescope_datetime[i], obs_location)
-        ephemeris_ra.append(ra)
-        ephemeris_dec.append(dec)
-        percentage_complete = round((i/no_coordinates)*100, 2)
-        print("Transforming... " + str(percentage_complete) + "% complete")
+    print("Transforming...")
+    with alive_bar(no_coordinates) as bar:
+        for i in range(no_coordinates):
+            ra, dec = transform(x_interp[i], y_interp[i], z_interp[i], telescope_datetime[i], obs_location)
+            ephemeris_ra.append(ra)
+            ephemeris_dec.append(dec)
+            bar()
 
     return ephemeris_ra, ephemeris_dec
 
@@ -134,8 +136,8 @@ def main(ephemeris_folder, telescope_data_folder):
     telescope_obs_files = glob.glob(telescope_data_folder + "*/*.csv")
 
     for file in telescope_obs_files:
-        print("Reading file...")
         file_name = os.path.basename(file)
+        print("Reading telescope observation file " + file_name)
         telescope_obs_file = np.genfromtxt(file, delimiter = ",", dtype = None, encoding='utf-8')
         telescope_datetime = np.array([datetime.strptime(time, '%Y-%m-%dT%H:%M:%S.%f') for time in telescope_obs_file[1:, 0]])
         telescope_ra = telescope_obs_file[1:, 3].astype(float)
@@ -162,7 +164,7 @@ def main(ephemeris_folder, telescope_data_folder):
         formatted_data = np.vstack((heading, final_data))
         output_file = output_dir + "compared_" + file_name
         np.savetxt(output_file, formatted_data, delimiter=',', fmt='%s')
-        print("Final data saved in " + output_file)
+        print("Done :D Final data saved in " + output_file + "\n")
 
 main(ephemeris_folder, telescope_data_folder)
 
