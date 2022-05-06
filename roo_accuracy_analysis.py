@@ -9,11 +9,10 @@ import os
 import numerical_methods as num_meth
 import requests
 from datetime import datetime
+from alive_progress import alive_bar
 from astropy import units as u
 from astropy.coordinates import (SkyCoord, EarthLocation)
 from astropy import coordinates as coord
-from alive_progress import alive_bar
-
 
 # CONFIG
 # Place telescope data in <telescope_data_folder>/QZSS1 or QZSS3
@@ -56,14 +55,14 @@ def choose_ephemeris(ephemeris_type, ephemeris_folder, time):
         file_name = "qzr" + gps_weekday + ".sp3"
         download_link = ephemeris_rapid_url + year + file_name
 
-        print("Downloading rapid ephemeris from " + download_link)
+        print("Downloading rapid ephemeris from " + download_link + "...")
         ephemeris_file = requests.get(download_link, allow_redirects=True)
         open(ephemeris_folder + file_name, 'wb').write(ephemeris_file.content)
     elif ephemeris_type == "final":
         file_name = "qzf" + gps_weekday + ".sp3"
         download_link = ephemeris_rapid_url + year + file_name
 
-        print("Downloading final ephemeris " + file_name)
+        print("Downloading final ephemeris " + file_name + "...")
         ephemeris_file = requests.get(download_link, allow_redirects=True)
         open(ephemeris_folder + file_name, 'wb').write(ephemeris_file.content)
     else:
@@ -137,7 +136,7 @@ def main(ephemeris_folder, telescope_data_folder):
 
     for file in telescope_obs_files:
         file_name = os.path.basename(file)
-        print("Reading telescope observation file " + file_name)
+        print("Reading telescope observation file " + file_name + "...")
         telescope_obs_file = np.genfromtxt(file, delimiter = ",", dtype = None, encoding='utf-8')
         telescope_datetime = np.array([datetime.strptime(time, '%Y-%m-%dT%H:%M:%S.%f') for time in telescope_obs_file[1:, 0]])
         telescope_ra = telescope_obs_file[1:, 3].astype(float)
