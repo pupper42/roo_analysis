@@ -114,8 +114,8 @@ dmypy.json
 .pyre/
 
 *.png
-*.csv
 metis-master 
 metis
 numerical_methods.py
 /bretts_code
+_old
