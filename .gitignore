@@ -119,3 +119,8 @@ metis
 numerical_methods.py
 /bretts_code
 _old
+raw_data
+*.fit
+*.fits
+*.sp3
+*.csv

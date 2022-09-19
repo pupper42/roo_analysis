@@ -8,7 +8,7 @@ import os
 import shutil
 import numerical_methods as num_meth
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from alive_progress import alive_bar
 from astropy import units as u
 from astropy.coordinates import (SkyCoord, EarthLocation)
@@ -37,6 +37,8 @@ QZS1 = "J01"
 QZS2 = "J02"
 QZS3 = "J07"
 QZS4 = "J03"
+PRN5 = "G05"
+PRN18 = "G18"
 
 ephemeris_final_url = "https://sys.qzss.go.jp/archives/final-sp3/"
 ephemeris_rapid_url = "https://sys.qzss.go.jp/archives/rapid-sp3/"
@@ -49,26 +51,33 @@ def choose_ephemeris(ephemeris_type, ephemeris_folder, time):
     gps_week = floor(time_since_epoch.total_seconds()/86400 / 7)
     gps_day = floor(time_since_epoch.total_seconds()/86400) % 7
     gps_weekday = str(gps_week) + str(gps_day)
+    download_link = None
+    file_path = None
+    file_name = None
 
     file_name = None
     year = str(time.year) + "/"
     if ephemeris_type == "rapid":
         file_name = "qzr" + gps_weekday + ".sp3"
         download_link = ephemeris_rapid_url + year + file_name
+        file_path = Path(ephemeris_folder + file_name)
 
-        print("Downloading rapid ephemeris from " + download_link + "...")
-        ephemeris_file = requests.get(download_link, allow_redirects=True)
-        open(ephemeris_folder + file_name, 'wb').write(ephemeris_file.content)
     elif ephemeris_type == "final":
         file_name = "qzf" + gps_weekday + ".sp3"
         download_link = ephemeris_final_url + year + file_name
+        file_path = Path(ephemeris_folder + file_name)
+    else:
+        print("Please choose a valid ephemeris!")
 
+    if file_path.is_file():
+        print(file_name + " already exists, using")
+    else:
         print("Downloading final ephemeris " + download_link + "...")
         ephemeris_file = requests.get(download_link, allow_redirects=True)
         open(ephemeris_folder + file_name, 'wb').write(ephemeris_file.content)
-    else:
-        print("Please choose a valid ephemeris!")
-    return Path(ephemeris_folder + file_name)
+    
+    return file_path
+    #return Path(ephemeris_folder + "igr22246.sp3")
 
 def interpolate(x, y, z, satellite_time_utc, telescope_datetime):
     satellite_time_utc_timestamp = np.array([pd.to_datetime([time]).astype(int) / 10**6 for time in satellite_time_utc]).flatten()
@@ -154,6 +163,12 @@ def main(ephemeris_folder, telescope_data_folder, output_dir, offset):
         elif ("qzs4" in file):
             satellite = QZS4
             ephemeris_ra, ephemeris_dec = interpolate_transform(satellite, telescope_datetime, ephemeris_folder, offset)
+        elif ("prn5" in file):
+            satellite = PRN5
+            ephemeris_ra, ephemeris_dec = interpolate_transform(satellite, telescope_datetime, ephemeris_folder, offset)
+        elif ("prn18" in file):
+            satellite = PRN18
+            ephemeris_ra, ephemeris_dec = interpolate_transform(satellite, telescope_datetime, ephemeris_folder, offset)
 
         telescope_datetime_timestamp = np.array([pd.to_datetime([str(time)]).astype(int) / 10**6 for time in telescope_datetime]).flatten()
         ra_difference = np.subtract(ephemeris_ra, telescope_ra) * 3600
@@ -161,12 +176,20 @@ def main(ephemeris_folder, telescope_data_folder, output_dir, offset):
         heading = ["Timestamp", "Telescope RA", "Telescope DEC", "Ephemeris RA", "Ephemeris DEC", "RA Difference", "DEC Difference"]
         final_data = np.stack((telescope_datetime_timestamp, telescope_ra, telescope_dec, ephemeris_ra, ephemeris_dec, ra_difference, dec_difference), axis=1)
         formatted_data = np.vstack((heading, final_data))
-        output_file = output_dir + "compared_" + file_name
+        print(offset)
+        print(offset.microseconds)
+        if offset < timedelta(seconds = 0):
+            output_file = output_dir + str(int(offset.microseconds / 1000 - 1000)) + "ms_compared_" + file_name
+        elif offset == timedelta(seconds = 1):
+            output_file = output_dir + str(int(offset.seconds * 1000)) + "ms_compared_" + file_name
+        else:
+            output_file = output_dir + str(int(offset.microseconds / 1000)) + "ms_compared_" + file_name
         if not(os.path.isdir(output_dir)):
             os.mkdir(output_dir)
         np.savetxt(output_file, formatted_data, delimiter=',', fmt='%s')
         print("Done :D Final data saved in " + output_file + "\n")
         #shutil.move(file, processed_telescope_data + file_name)
 
-
+offset_datetime = timedelta(milliseconds=int(0))
+#main(ephemeris_folder, telescope_data_folder, output_dir, offset = offset_datetime)
 
