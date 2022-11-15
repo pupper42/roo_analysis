@@ -112,7 +112,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
+220502_qzs3_astrometrynet
 *.png
 metis-master 
 metis

@@ -170,7 +170,7 @@ def main(ephemeris_folder, telescope_data_folder, output_dir, offset):
             satellite = PRN18
             ephemeris_ra, ephemeris_dec = interpolate_transform(satellite, telescope_datetime, ephemeris_folder, offset)
 
-        telescope_datetime_timestamp = np.array([pd.to_datetime([str(time)]).astype(int) / 10**6 for time in telescope_datetime]).flatten()
+        telescope_datetime_timestamp = np.array([(datetime.strptime(time, '%Y-%m-%dT%H:%M:%S.%f') + offset).isoformat() for time in telescope_obs_file[1:, 0]])
         ra_difference = np.subtract(ephemeris_ra, telescope_ra) * 3600
         dec_difference = np.subtract(ephemeris_dec, telescope_dec) * 3600
         heading = ["Timestamp", "Telescope RA", "Telescope DEC", "Ephemeris RA", "Ephemeris DEC", "RA Difference", "DEC Difference"]
@@ -191,5 +191,5 @@ def main(ephemeris_folder, telescope_data_folder, output_dir, offset):
         #shutil.move(file, processed_telescope_data + file_name)
 
 offset_datetime = timedelta(milliseconds=int(0))
-#main(ephemeris_folder, telescope_data_folder, output_dir, offset = offset_datetime)
+main(ephemeris_folder, telescope_data_folder, output_dir, offset = offset_datetime)
 
